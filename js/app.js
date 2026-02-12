@@ -8,7 +8,7 @@ const ONLY_PASS = "its";
 // Tabs
 // ===============================
 const tabButtons = document.querySelectorAll(".tab");
-const tabViews = {
+const views = {
   login: document.getElementById("tab-login"),
   analizar: document.getElementById("tab-analizar"),
   resultados: document.getElementById("tab-resultados"),
@@ -16,7 +16,7 @@ const tabViews = {
 
 function showTab(name){
   tabButtons.forEach(b => b.classList.toggle("active", b.dataset.tab === name));
-  Object.entries(tabViews).forEach(([k, el]) => el.classList.toggle("show", k === name));
+  Object.entries(views).forEach(([k, el]) => el.classList.toggle("show", k === name));
 }
 
 tabButtons.forEach(btn => {
@@ -53,96 +53,178 @@ loginForm.addEventListener("submit", (e) => {
 
   if (u === ONLY_USER && p === ONLY_PASS){
     loginMsg.textContent = "Acceso concedido.";
-    loginMsg.style.color = "green";
+    loginMsg.style.color = "#3ddc97";
     setAuthed(true);
   } else {
     loginMsg.textContent = "Usuario o contraseña incorrectos.";
-    loginMsg.style.color = "crimson";
+    loginMsg.style.color = "#ff5a7a";
     setAuthed(false);
   }
 });
 
-// Mantener sesión si recargas
+// mantener sesión al recargar
 setAuthed(localStorage.getItem("authed") === "1");
 
 // ===============================
 // Teachable Machine (Image)
 // ===============================
 let model = null;
-let maxPredictions = 0;
 
-const modelStatus = document.getElementById("modelStatus");
+const modelBadge = document.getElementById("modelBadge");
+const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
-const previewImg = document.getElementById("previewImg");
+
 const btnPredict = document.getElementById("btnPredict");
-const predOut = document.getElementById("predOut");
+const btnClearImg = document.getElementById("btnClearImg");
 const goResults = document.getElementById("goResults");
 
-// IMPORTANTE:
-// Deja tu modelo en /model/ (model.json, metadata.json, weights.bin)
-const MODEL_URL = "model/"; // carpeta
+const previewImg = document.getElementById("previewImg");
+const fileMeta = document.getElementById("fileMeta");
 
+const predTop = document.getElementById("predTop");
+const topName = document.getElementById("topName");
+const topConf = document.getElementById("topConf");
+const predList = document.getElementById("predList");
+
+// IMPORTANTE: si tu modelo va local, deja "model/"
+// si lo hospedas, pon una URL que termine en "/"
+const MODEL_URL = "model/";
+
+// Cargar modelo
 async function loadModel(){
   try{
-    modelStatus.textContent = "Modelo: cargando...";
+    modelBadge.textContent = "Modelo: cargando…";
+    modelBadge.style.borderColor = "rgba(255,255,255,.12)";
     model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
-    maxPredictions = model.getTotalClasses();
-    modelStatus.textContent = `Modelo: cargado (${maxPredictions} clases).`;
-    // Si ya hay imagen, habilita analizar
-    btnPredict.disabled = !previewImg.src;
+    const total = model.getTotalClasses();
+    modelBadge.textContent = `Modelo: listo (${total} clases)`;
+    modelBadge.style.borderColor = "rgba(61,220,151,.35)";
+    updateButtons();
   }catch(err){
     console.error(err);
-    modelStatus.textContent = "Modelo: error al cargar. Revisa la carpeta /model/";
+    modelBadge.textContent = "Modelo: error al cargar";
+    modelBadge.style.borderColor = "rgba(255,90,122,.35)";
   }
 }
 
 loadModel();
 
-// Vista previa de imagen
-fileInput.addEventListener("change", () => {
-  const file = fileInput.files?.[0];
+// ===============================
+// Utilidades UI
+// ===============================
+function updateButtons(){
+  const hasImg = !!previewImg.src;
+  btnPredict.disabled = !(model && hasImg);
+  btnClearImg.disabled = !hasImg;
+}
+
+function resetResults(){
+  predTop.classList.add("hidden");
+  topName.textContent = "—";
+  topConf.textContent = "—";
+  predList.textContent = "Aún no hay resultados.";
+  goResults.disabled = true;
+  localStorage.removeItem("lastPrediction");
+}
+
+function setPreviewFromFile(file){
   if (!file) return;
+  if (!file.type.startsWith("image/")){
+    predList.textContent = "Ese archivo no es una imagen.";
+    return;
+  }
+
+  // revocar anterior blob para no gastar memoria
+  if (previewImg.src && previewImg.src.startsWith("blob:")) {
+    URL.revokeObjectURL(previewImg.src);
+  }
 
   const url = URL.createObjectURL(file);
   previewImg.src = url;
   previewImg.style.display = "block";
-  predOut.textContent = "Listo. Ahora puedes analizar con IA.";
 
-  btnPredict.disabled = !model; // solo si el modelo ya cargó
+  fileMeta.textContent = `${file.name} • ${(file.size/1024/1024).toFixed(2)} MB`;
+  resetResults();
+  predList.textContent = "Listo. Presiona “Analizar con IA”.";
+  updateButtons();
+}
+
+// ===============================
+// Drag & Drop + Click
+// ===============================
+dropzone.addEventListener("click", () => fileInput.click());
+
+dropzone.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") fileInput.click();
 });
 
-// Analizar
+dropzone.addEventListener("dragenter", (e) => {
+  e.preventDefault();
+  dropzone.classList.add("dragover");
+});
+dropzone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  dropzone.classList.add("dragover");
+});
+dropzone.addEventListener("dragleave", () => {
+  dropzone.classList.remove("dragover");
+});
+dropzone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropzone.classList.remove("dragover");
+  const file = e.dataTransfer.files?.[0];
+  if (file) setPreviewFromFile(file);
+});
+
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files?.[0];
+  if (file) setPreviewFromFile(file);
+});
+
+// ===============================
+// Quitar imagen
+// ===============================
+btnClearImg.addEventListener("click", () => {
+  if (previewImg.src && previewImg.src.startsWith("blob:")) {
+    URL.revokeObjectURL(previewImg.src);
+  }
+
+  fileInput.value = "";
+  previewImg.removeAttribute("src");
+  previewImg.style.display = "none";
+  fileMeta.textContent = "";
+  resetResults();
+  updateButtons();
+});
+
+// ===============================
+// Predicción
+// ===============================
 btnPredict.addEventListener("click", async () => {
-  if (!model) {
-    predOut.textContent = "El modelo aún no está cargado.";
-    return;
-  }
-  if (!previewImg.src) {
-    predOut.textContent = "Primero sube una imagen.";
-    return;
-  }
+  if (!model) return;
+  if (!previewImg.src) return;
 
-  predOut.textContent = "Analizando...";
+  predList.textContent = "Analizando…";
+
   const prediction = await model.predict(previewImg, false);
-
-  // Ordenar por probabilidad desc
   prediction.sort((a,b) => b.probability - a.probability);
 
   const top = prediction[0];
-  let text = `Resultado (top): ${top.className}\nConfianza: ${(top.probability*100).toFixed(2)}%\n\nDetalles:\n`;
+  predTop.classList.remove("hidden");
+  topName.textContent = top.className;
+  topConf.textContent = `Confianza: ${(top.probability*100).toFixed(2)}%`;
+
+  let text = "";
   for (const p of prediction){
-    text += `- ${p.className}: ${(p.probability*100).toFixed(2)}%\n`;
+    text += `• ${p.className}: ${(p.probability*100).toFixed(2)}%\n`;
   }
+  predList.textContent = text.trim();
 
-  predOut.textContent = text;
-
-  // Guardar para la pestaña de resultados (la armamos después)
   localStorage.setItem("lastPrediction", JSON.stringify(prediction));
   goResults.disabled = false;
 });
 
-// (placeholder) ir a resultados
+// Placeholder ir a resultados
 goResults.addEventListener("click", () => {
-  // aún no la construimos, pero dejamos el flujo listo
   showTab("resultados");
 });
