@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consultorio Digital</title>
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <!-- Teachable Machine (Image) + TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+</head>
+
+<body>
+  <header class="top">
+    <h1>Bienvenido a tu consultorio digital</h1>
+    <nav class="tabs">
+      <button class="tab active" data-tab="login">Login</button>
+      <button class="tab" data-tab="analizar" disabled>Analizar</button>
+      <button class="tab" data-tab="resultados" disabled>Resultados</button>
+      <div class="spacer"></div>
+      <button id="btnLogout" class="ghost" hidden>Cerrar sesión</button>
+    </nav>
+  </header>
+
+  <main class="card">
+    <!-- TAB 1: LOGIN -->
+    <section id="tab-login" class="tabview show">
+      <h2>Iniciar sesión</h2>
+      <p class="muted">Solo acceso del doctor.</p>
+
+      <form id="loginForm" class="form">
+        <label>
+          Usuario
+          <input id="user" type="text" autocomplete="username" placeholder="jesusc" required />
+        </label>
+
+        <label>
+          Contraseña
+          <input id="pass" type="password" autocomplete="current-password" placeholder="its" required />
+        </label>
+
+        <button type="submit" class="primary">Entrar</button>
+        <p id="loginMsg" class="msg"></p>
+      </form>
+    </section>
+
+    <!-- TAB 2: ANALIZAR -->
+    <section id="tab-analizar" class="tabview">
+      <h2>Analizar radiografía</h2>
+      <p class="muted">Sube una imagen para que el modelo la analice.</p>
+
+      <div class="panel">
+        <input id="fileInput" type="file" accept="image/*" />
+        <button id="btnPredict" class="primary" disabled>Analizar con IA</button>
+      </div>
+
+      <div class="grid">
+        <div class="preview">
+          <h3>Vista previa</h3>
+          <img id="previewImg" alt="Vista previa" />
+          <p id="modelStatus" class="muted small">Modelo: no cargado.</p>
+        </div>
+
+        <div class="pred">
+          <h3>Predicción</h3>
+          <div id="predOut" class="predOut muted">Aún no hay resultados.</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="goResults" class="ghost" disabled>Ir a Resultados (más adelante)</button>
+      </div>
+    </section>
+
+    <!-- TAB 3: RESULTADOS (placeholder) -->
+    <section id="tab-resultados" class="tabview">
+      <h2>Resultados</h2>
+      <p class="muted">Esta pestaña la construiremos al final.</p>
+      <div class="predOut muted">
+        Por ahora solo estamos habilitando Login + Analizar.
+      </div>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

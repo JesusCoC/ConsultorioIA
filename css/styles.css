@@ -1,0 +1,153 @@
+:root{
+  --bg:#f6f7fb;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --primary:#f05a28;
+}
+
+*{ box-sizing:border-box; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.top{
+  padding:24px 16px 12px;
+  text-align:center;
+}
+
+.tabs{
+  margin:16px auto 0;
+  max-width:980px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-start;
+  padding:0 8px;
+}
+
+.spacer{ flex:1; }
+
+.tab, .ghost, .primary{
+  border-radius:10px;
+  border:1px solid var(--line);
+  padding:10px 14px;
+  background:#fff;
+  cursor:pointer;
+}
+
+.tab.active{
+  border-color:var(--primary);
+  box-shadow:0 0 0 2px rgba(240,90,40,.15);
+}
+
+.tab:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.primary{
+  background:var(--primary);
+  color:white;
+  border-color:transparent;
+}
+
+.ghost{
+  background:transparent;
+}
+
+.card{
+  max-width:980px;
+  margin:12px auto 40px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:22px;
+  box-shadow: 0 10px 30px rgba(17,24,39,.06);
+}
+
+.tabview{ display:none; }
+.tabview.show{ display:block; }
+
+.form{
+  max-width:380px;
+  margin:16px auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  text-align:left;
+}
+
+label{ display:flex; flex-direction:column; gap:6px; font-weight:600; }
+input{
+  padding:11px 12px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  outline:none;
+}
+input:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 2px rgba(240,90,40,.15);
+}
+
+.muted{ color:var(--muted); }
+.small{ font-size:13px; }
+
+.msg{ min-height:20px; margin:0; }
+
+.panel{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  padding:12px;
+  border:1px dashed var(--line);
+  border-radius:14px;
+  margin:14px 0;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:16px;
+}
+@media (max-width: 780px){
+  .grid{ grid-template-columns:1fr; }
+}
+
+.preview, .pred{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  background:#fff;
+}
+
+#previewImg{
+  width:100%;
+  max-height:360px;
+  object-fit:contain;
+  display:none;
+  margin-top:10px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#fafafa;
+}
+
+.predOut{
+  padding:12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#fafafa;
+  min-height:120px;
+  white-space:pre-wrap;
+}
+
+.actions{
+  margin-top:12px;
+  display:flex;
+  justify-content:flex-end;
+}
