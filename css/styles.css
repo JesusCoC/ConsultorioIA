@@ -1,8 +1,5 @@
 :root{
   --bg:#0b1220;
-  --panel:#0f1a2f;
-  --card:#0f1a2f;
-  --card2:#0c1629;
   --text:#e6eaf2;
   --muted:#a6b0c3;
   --line:rgba(255,255,255,.10);
@@ -10,12 +7,14 @@
   --primary2:#ff845f;
   --ok:#3ddc97;
   --warn:#ffd166;
+  --danger:#ff5a7a;
   --shadow: 0 18px 50px rgba(0,0,0,.35);
   --radius:18px;
 }
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
+
 body{
   margin:0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
@@ -47,16 +46,8 @@ body{
   box-shadow: 0 12px 30px rgba(255,106,61,.25);
 }
 
-h1{
-  margin:0;
-  font-size:20px;
-  font-weight:800;
-}
-.sub{
-  margin:2px 0 0;
-  color:var(--muted);
-  font-size:13px;
-}
+h1{ margin:0; font-size:20px; font-weight:800; }
+.sub{ margin:2px 0 0; color:var(--muted); font-size:13px; }
 
 .tabs{
   margin-top:14px;
@@ -87,10 +78,7 @@ h1{
   border-color: rgba(255,106,61,.7);
   box-shadow: 0 0 0 3px rgba(255,106,61,.12);
 }
-.tab:disabled{
-  opacity:.4;
-  cursor:not-allowed;
-}
+.tab:disabled{ opacity:.4; cursor:not-allowed; }
 
 .wrap{
   max-width:1100px;
@@ -118,17 +106,8 @@ h1{
   padding:18px;
 }
 
-h2{
-  margin:0 0 6px;
-  font-size:18px;
-  font-weight:800;
-}
-h3{
-  margin:14px 0 8px;
-  font-size:14px;
-  font-weight:800;
-  color: rgba(230,234,242,.95);
-}
+h2{ margin:0 0 6px; font-size:18px; font-weight:800; }
+h3{ margin:14px 0 8px; font-size:14px; font-weight:800; color: rgba(230,234,242,.95); }
 
 .muted{ color: var(--muted); }
 .small{ font-size:12px; }
@@ -181,9 +160,7 @@ input:focus{
   box-shadow: 0 14px 35px rgba(255,106,61,.18);
 }
 
-.ghost{
-  background: transparent;
-}
+.ghost{ background: transparent; }
 
 .row{
   display:flex;
@@ -229,11 +206,9 @@ input:focus{
   outline:none;
   transition: border-color .2s ease, box-shadow .2s ease, transform .06s ease;
 }
-.dropzone:hover{
-  border-color: rgba(255,106,61,.65);
-}
+.dropzone:hover{ border-color: rgba(255,106,61,.65); }
 .dropzone:active{ transform: translateY(1px); }
-.dropzone.focused, .dropzone.dragover{
+.dropzone.dragover{
   border-color: rgba(255,106,61,.85);
   box-shadow: 0 0 0 4px rgba(255,106,61,.14);
 }
@@ -302,6 +277,7 @@ input:focus{
   padding-top:10px;
   border-top:1px solid var(--line);
 }
+
 .predList{
   padding:12px;
   border-radius: 16px;
@@ -311,24 +287,14 @@ input:focus{
   white-space:pre-wrap;
 }
 
-.empty{
-  margin-top:14px;
-  padding:18px;
-  border-radius: 16px;
+.dxBox{
+  padding:12px;
+  border-radius:16px;
   border:1px solid var(--line);
-  background: rgba(0,0,0,.12);
-  display:flex;
-  align-items:center;
-  gap:12px;
+  background: rgba(0,0,0,.14);
+  white-space:pre-wrap;
+  line-height:1.45;
 }
-.emptyIcon{
-  width:44px; height:44px;
-  border-radius: 16px;
-  display:grid; place-items:center;
-  border:1px solid var(--line);
-  background: rgba(255,255,255,.04);
-}
-.emptyText{ font-weight:800; color: rgba(230,234,242,.85); }
 
 .foot{
   max-width:1100px;

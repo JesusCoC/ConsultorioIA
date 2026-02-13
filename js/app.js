@@ -17,6 +17,7 @@ const views = {
 function showTab(name){
   tabButtons.forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   Object.entries(views).forEach(([k, el]) => el.classList.toggle("show", k === name));
+  if (name === "resultados") loadResultIntoResultsTab();
 }
 
 tabButtons.forEach(btn => {
@@ -42,9 +43,9 @@ function setAuthed(isAuthed){
   else showTab("login");
 }
 
-btnLogout?.addEventListener("click", () => setAuthed(false));
+btnLogout.addEventListener("click", () => setAuthed(false));
 
-loginForm?.addEventListener("submit", (e) => {
+loginForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const u = document.getElementById("user").value.trim();
   const p = document.getElementById("pass").value;
@@ -64,10 +65,11 @@ loginForm?.addEventListener("submit", (e) => {
 setAuthed(localStorage.getItem("authed") === "1");
 
 // ===============================
-// Teachable Machine (Image)
+// Modelo Teachable Machine
 // ===============================
 let model = null;
 
+// Elementos UI
 const modelBadge = document.getElementById("modelBadge");
 const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
@@ -83,93 +85,138 @@ const predTop = document.getElementById("predTop");
 const topName = document.getElementById("topName");
 const topConf = document.getElementById("topConf");
 const predList = document.getElementById("predList");
-
-// NUEVO: caja de orientación (si no existe, no truena)
 const dxBox = document.getElementById("dxBox");
 
-// IMPORTANTE:
-// - Si el modelo va en tu proyecto: "model/"
-// - Si lo hospedas: URL que termine en "/"
+const resultsBox = document.getElementById("resultsBox");
+const btnClearHistory = document.getElementById("btnClearHistory");
+
+// carpeta del modelo
 const MODEL_URL = "model/";
 
 // ===============================
-// Orientación clínica (por clase)
-// Ajusta los nombres EXACTOS a tus clases de Teachable Machine
+// Guías clínicas (TUS 5 CLASES)
 // ===============================
 const GUIDES = {
-  "Normal": {
-    title: "Sin hallazgos evidentes en la radiografía",
-    text:
-`• Si no hay síntomas: seguimiento rutinario.
-• Si hay fiebre/tos/dolor torácico: una radiografía normal no descarta enfermedad temprana; considerar valoración clínica y seguimiento.
-• Vigilar evolución y saturación de oxígeno si hay síntomas.`
+  "HEALTHY": {
+    title: "Radiografía sin hallazgos patológicos evidentes (HEALTHY)",
+    text: `
+• La imagen no muestra alteraciones significativas según el modelo.
+• Si el paciente está sin síntomas: seguimiento rutinario.
+• Si hay síntomas persistentes (fiebre, tos, dolor torácico, falta de aire), una radiografía “normal” no descarta enfermedad temprana.
+• Correlacionar con exploración clínica; considerar oximetría y seguimiento.
+`
   },
-  "Neumonía": {
-    title: "Sospecha de neumonía",
-    text:
-`• Correlacionar con fiebre, tos, expectoración, dolor torácico o falta de aire.
-• Mantener hidratación y control de fiebre/dolor según indicación médica.
-• Considerar oximetría (SpO₂) y factores de riesgo (edad, comorbilidades).
-• Antibióticos solo si un médico lo indica (cuando se sospecha origen bacteriano).`
+
+  "PNEUMONIA": {
+    title: "Sospecha de neumonía (PNEUMONIA)",
+    text: `
+• Correlacionar con fiebre, tos (seca o productiva), dolor torácico y dificultad respiratoria.
+• Recomendación general: valoración médica para confirmar (viral vs bacteriana) y definir manejo.
+• Medidas de soporte: reposo, hidratación, control de fiebre/dolor según indicación médica.
+• Considerar oximetría (SpO₂), comorbilidades y edad para decidir si requiere manejo hospitalario.
+• Antibióticos solo si un médico lo indica (cuando se sospecha origen bacteriano).
+`
   },
-  "COVID-19": {
-    title: "Hallazgos compatibles con infección respiratoria viral",
-    text:
-`• Correlacionar con síntomas y pruebas diagnósticas según protocolo.
-• Medidas generales: reposo, hidratación, control de síntomas.
-• Vigilar saturación de oxígeno y evolución clínica.
-• Considerar aislamiento si hay sospecha/confirmación activa.`
+
+  "PNEUMOTHORAX": {
+    title: "Posible neumotórax (PNEUMOTHORAX)",
+    text: `
+• Puede presentarse con dolor torácico súbito y falta de aire.
+• Puede ser URGENTE dependiendo de la extensión y la clínica.
+• Recomendación general: evaluación inmediata si hay disnea, dolor intenso o empeoramiento rápido.
+• El manejo puede ir desde observación hasta procedimientos (p. ej. drenaje), según valoración médica.
+`
   },
-  "Tuberculosis": {
-    title: "Sospecha de tuberculosis pulmonar",
-    text:
-`• No se confirma solo con radiografía: requiere estudios específicos (baciloscopía/cultivo/pruebas moleculares).
-• Si hay tos ≥3 semanas, pérdida de peso, sudoración nocturna o sangre en esputo: priorizar valoración médica.
-• Considerar medidas para reducir contagio hasta descartar.`
+
+  "EFFUSION": {
+    title: "Posible derrame pleural (EFFUSION)",
+    text: `
+• Puede asociarse a infección, insuficiencia cardiaca, enfermedad renal/hepática u otras causas.
+• Recomendación general: valoración médica para definir la causa y necesidad de estudios adicionales.
+• En algunos casos puede requerirse ecografía/TC y/o drenaje diagnóstico/terapéutico.
+• Vigilar síntomas: falta de aire, dolor pleurítico, fiebre.
+`
   },
-  "Neumotórax": {
-    title: "Posible neumotórax",
-    text:
-`• Puede ser urgente si hay dolor súbito en pecho o falta de aire.
-• Requiere valoración inmediata para confirmar y decidir manejo (observación/drenaje).`
-  },
-  "Derrame pleural": {
-    title: "Posible derrame pleural",
-    text:
-`• Puede relacionarse con infección, insuficiencia cardiaca u otras causas.
-• Suele requerir evaluación y, en algunos casos, drenaje/estudios del líquido.`
-  },
-  "Edema pulmonar": {
-    title: "Posible edema pulmonar",
-    text:
-`• Puede asociarse a insuficiencia cardiaca u otras causas y puede ser una emergencia.
-• Si hay falta de aire importante (sobre todo súbita o al acostarse), acudir a atención urgente.`
+
+  "CARDIOMEGALY": {
+    title: "Posible cardiomegalia (CARDIOMEGALY)",
+    text: `
+• Sugiere aumento del tamaño cardíaco, pero debe correlacionarse con técnica de la radiografía y clínica.
+• Puede relacionarse con hipertensión, cardiomiopatía, insuficiencia cardiaca u otras causas.
+• Recomendación general: valoración médica (idealmente cardiología) y estudios complementarios (ECG, ecocardiograma, etc.).
+• Si hay disnea, hinchazón de piernas, fatiga marcada o dolor torácico: priorizar evaluación.
+`
   }
 };
 
-const RED_FLAGS =
-`⚠️ ACUDIR A URGENCIAS SI HAY:
-• Dificultad marcada para respirar
-• Dolor/ presión intensa en el pecho
-• Confusión o somnolencia excesiva
+const RED_FLAGS = `
+⚠️ ACUDIR A URGENCIAS SI PRESENTA:
+• Dificultad marcada para respirar o saturación baja
+• Dolor o presión intensa en el pecho
+• Confusión, somnolencia marcada o desmayo
 • Coloración azulada en labios/piel
 • Empeoramiento rápido de síntomas
 
-Aviso: orientación informativa basada en IA, no sustituye valoración médica.`;
+Aviso: Esto es orientación general basada en una predicción de IA y NO sustituye valoración médica.
+`;
 
-function renderGuide(className){
-  if (!dxBox) return; // si no existe en HTML, no hacemos nada
-
+function buildGuideHTML(className){
   const guide = GUIDES[className];
   if(!guide){
-    dxBox.textContent = "No hay guía configurada para esta categoría (ajusta los nombres de clases).";
+    return `
+      <div style="font-weight:900; margin-bottom:8px;">Orientación general</div>
+      <div style="white-space:pre-wrap; line-height:1.5;">
+        • No hay guía configurada para la clase: ${className}
+        • Verifica que el nombre de clase sea EXACTO.
+      </div>
+      <div style="margin-top:12px; padding:12px; border-radius:14px; border:1px solid rgba(255,90,122,.28); background: rgba(255,90,122,.08); white-space:pre-wrap;">
+        ${RED_FLAGS}
+      </div>
+    `;
+  }
+
+  return `
+    <div style="font-weight:900; margin-bottom:8px;">${guide.title}</div>
+    <div style="white-space:pre-wrap; line-height:1.5;">${guide.text}</div>
+    <div style="margin-top:12px; padding:12px; border-radius:14px; border:1px solid rgba(255,90,122,.28); background: rgba(255,90,122,.08); white-space:pre-wrap;">
+      ${RED_FLAGS}
+    </div>
+  `;
+}
+
+function renderGuide(className){
+  dxBox.innerHTML = buildGuideHTML(className);
+}
+
+function saveResultToStorage(top){
+  const payload = {
+    topClass: top.className,
+    topProb: top.probability,
+    guideHTML: buildGuideHTML(top.className),
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem("lastDx", JSON.stringify(payload));
+}
+
+function loadResultIntoResultsTab(){
+  const raw = localStorage.getItem("lastDx");
+  if(!raw){
+    resultsBox.textContent = "Aún no hay resultados guardados. Realiza un análisis primero.";
     return;
   }
 
-  dxBox.innerHTML =
-`<div style="font-weight:900; margin-bottom:8px;">${guide.title}</div>
-<div style="white-space:pre-wrap; line-height:1.45;">${guide.text}</div>
-<div style="margin-top:10px; padding:10px 12px; border-radius:14px; border:1px solid rgba(255,90,122,.28); background: rgba(255,90,122,.08); white-space:pre-wrap;">${RED_FLAGS}</div>`;
+  const data = JSON.parse(raw);
+  const pct = (data.topProb * 100).toFixed(2);
+  const dateStr = new Date(data.savedAt).toLocaleString();
+
+  resultsBox.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <strong>Resultado principal:</strong> ${data.topClass}<br>
+      <strong>Confianza:</strong> ${pct}%<br>
+      <span style="font-size:12px; opacity:.7;">Guardado: ${dateStr}</span>
+    </div>
+    ${data.guideHTML}
+  `;
 }
 
 // ===============================
@@ -177,46 +224,44 @@ function renderGuide(className){
 // ===============================
 async function loadModel(){
   try{
-    modelBadge && (modelBadge.textContent = "Modelo: cargando…");
+    modelBadge.textContent = "Modelo: cargando…";
     model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
     const total = model.getTotalClasses();
-    modelBadge && (modelBadge.textContent = `Modelo: listo (${total} clases)`);
+    modelBadge.textContent = `Modelo: listo (${total} clases)`;
     updateButtons();
   }catch(err){
     console.error(err);
-    modelBadge && (modelBadge.textContent = "Modelo: error al cargar");
+    modelBadge.textContent = "Modelo: error al cargar";
   }
 }
 loadModel();
 
 // ===============================
-// UI helpers
+// Helpers
 // ===============================
 function updateButtons(){
-  const hasImg = !!previewImg?.src;
-  if (btnPredict) btnPredict.disabled = !(model && hasImg);
-  if (btnClearImg) btnClearImg.disabled = !hasImg;
+  const hasImg = !!previewImg.src;
+  btnPredict.disabled = !(model && hasImg);
+  btnClearImg.disabled = !hasImg;
 }
 
 function resetResults(){
-  if (predTop) predTop.classList.add("hidden");
-  if (topName) topName.textContent = "—";
-  if (topConf) topConf.textContent = "—";
-  if (predList) predList.textContent = "Aún no hay resultados.";
-  if (goResults) goResults.disabled = true;
-  localStorage.removeItem("lastPrediction");
-  if (dxBox) dxBox.textContent = "Aún no hay orientación. Analiza una radiografía.";
+  predTop.classList.add("hidden");
+  topName.textContent = "—";
+  topConf.textContent = "—";
+  predList.textContent = "Aún no hay resultados.";
+  dxBox.textContent = "Aún no hay orientación. Analiza una radiografía.";
+  goResults.disabled = true;
 }
 
 function setPreviewFromFile(file){
   if (!file) return;
   if (!file.type.startsWith("image/")){
-    predList && (predList.textContent = "Ese archivo no es una imagen.");
+    predList.textContent = "Ese archivo no es una imagen.";
     return;
   }
 
-  // revocar anterior blob
-  if (previewImg?.src && previewImg.src.startsWith("blob:")) {
+  if (previewImg.src && previewImg.src.startsWith("blob:")) {
     URL.revokeObjectURL(previewImg.src);
   }
 
@@ -224,43 +269,41 @@ function setPreviewFromFile(file){
   previewImg.src = url;
   previewImg.style.display = "block";
 
-  if (fileMeta){
-    fileMeta.textContent = `${file.name} • ${(file.size/1024/1024).toFixed(2)} MB`;
-  }
+  fileMeta.textContent = `${file.name} • ${(file.size/1024/1024).toFixed(2)} MB`;
 
   resetResults();
-  predList && (predList.textContent = "Listo. Presiona “Analizar con IA”.");
+  predList.textContent = "Listo. Presiona “Analizar con IA”.";
   updateButtons();
 }
 
 // ===============================
 // Drag & Drop + Click
 // ===============================
-dropzone?.addEventListener("click", () => fileInput?.click());
+dropzone.addEventListener("click", () => fileInput.click());
 
-dropzone?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") fileInput?.click();
+dropzone.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") fileInput.click();
 });
 
-dropzone?.addEventListener("dragenter", (e) => {
+dropzone.addEventListener("dragenter", (e) => {
   e.preventDefault();
   dropzone.classList.add("dragover");
 });
-dropzone?.addEventListener("dragover", (e) => {
+dropzone.addEventListener("dragover", (e) => {
   e.preventDefault();
   dropzone.classList.add("dragover");
 });
-dropzone?.addEventListener("dragleave", () => {
+dropzone.addEventListener("dragleave", () => {
   dropzone.classList.remove("dragover");
 });
-dropzone?.addEventListener("drop", (e) => {
+dropzone.addEventListener("drop", (e) => {
   e.preventDefault();
   dropzone.classList.remove("dragover");
   const file = e.dataTransfer.files?.[0];
   if (file) setPreviewFromFile(file);
 });
 
-fileInput?.addEventListener("change", () => {
+fileInput.addEventListener("change", () => {
   const file = fileInput.files?.[0];
   if (file) setPreviewFromFile(file);
 });
@@ -268,17 +311,14 @@ fileInput?.addEventListener("change", () => {
 // ===============================
 // Quitar imagen
 // ===============================
-btnClearImg?.addEventListener("click", () => {
-  if (previewImg?.src && previewImg.src.startsWith("blob:")) {
+btnClearImg.addEventListener("click", () => {
+  if (previewImg.src && previewImg.src.startsWith("blob:")) {
     URL.revokeObjectURL(previewImg.src);
   }
-
-  if (fileInput) fileInput.value = "";
-  if (previewImg){
-    previewImg.removeAttribute("src");
-    previewImg.style.display = "none";
-  }
-  if (fileMeta) fileMeta.textContent = "";
+  fileInput.value = "";
+  previewImg.removeAttribute("src");
+  previewImg.style.display = "none";
+  fileMeta.textContent = "";
   resetResults();
   updateButtons();
 });
@@ -286,11 +326,11 @@ btnClearImg?.addEventListener("click", () => {
 // ===============================
 // Predicción
 // ===============================
-btnPredict?.addEventListener("click", async () => {
+btnPredict.addEventListener("click", async () => {
   if (!model) return;
-  if (!previewImg?.src) return;
+  if (!previewImg.src) return;
 
-  predList && (predList.textContent = "Analizando…");
+  predList.textContent = "Analizando…";
 
   try{
     const prediction = await model.predict(previewImg, false);
@@ -298,28 +338,39 @@ btnPredict?.addEventListener("click", async () => {
 
     const top = prediction[0];
 
-    if (predTop) predTop.classList.remove("hidden");
-    if (topName) topName.textContent = top.className;
-    if (topConf) topConf.textContent = `Confianza: ${(top.probability*100).toFixed(2)}%`;
+    predTop.classList.remove("hidden");
+    topName.textContent = top.className;
+    topConf.textContent = `Confianza: ${(top.probability*100).toFixed(2)}%`;
 
-    // lista completa
     let text = "";
     for (const p of prediction){
       text += `• ${p.className}: ${(p.probability*100).toFixed(2)}%\n`;
     }
-    predList && (predList.textContent = text.trim());
+    predList.textContent = text.trim();
 
-    // orientación por clase
+    // orientación + guardar
     renderGuide(top.className);
+    saveResultToStorage(top);
 
     localStorage.setItem("lastPrediction", JSON.stringify(prediction));
-    if (goResults) goResults.disabled = false;
+    goResults.disabled = false;
 
   }catch(err){
     console.error(err);
-    predList && (predList.textContent = "Error al analizar. Revisa consola (F12).");
+    predList.textContent = "Error al analizar. Revisa consola (F12).";
   }
 });
 
-// Placeholder ir a resultados
-goResults?.addEventListener("click", () => showTab("resultados"));
+// Ir a Resultados
+goResults.addEventListener("click", () => showTab("resultados"));
+
+// Borrar resultado
+btnClearHistory.addEventListener("click", () => {
+  localStorage.removeItem("lastDx");
+  loadResultIntoResultsTab();
+});
+
+// ===============================
+// Logout
+// ===============================
+btnLogout.addEventListener("click", () => setAuthed(false));

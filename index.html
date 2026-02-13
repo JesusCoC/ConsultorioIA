@@ -31,6 +31,7 @@
   </header>
 
   <main class="wrap">
+
     <!-- LOGIN -->
     <section id="tab-login" class="view show">
       <div class="card">
@@ -53,7 +54,7 @@
 
           <div class="hint">
             <span class="dot"></span>
-            <span>Prototipo: el login real se hace con backend.</span>
+            <span>Prototipo académico. Para seguridad real, el login debe estar en backend.</span>
           </div>
         </form>
       </div>
@@ -62,6 +63,8 @@
     <!-- ANALIZAR -->
     <section id="tab-analizar" class="view">
       <div class="grid">
+
+        <!-- izquierda -->
         <div class="card">
           <div class="row">
             <h2>Analizar radiografía</h2>
@@ -69,7 +72,6 @@
           </div>
           <p class="muted">Arrastra una imagen al recuadro o haz clic para seleccionarla.</p>
 
-          <!-- Dropzone -->
           <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Subir imagen">
             <div class="dz-inner">
               <div class="dz-icon">⬆</div>
@@ -95,9 +97,10 @@
           </div>
         </div>
 
+        <!-- derecha -->
         <div class="card">
           <h2>Resultado</h2>
-          <p class="muted">Aquí verás la predicción del modelo.</p>
+          <p class="muted">Predicción del modelo y orientación general.</p>
 
           <div id="predTop" class="topResult hidden">
             <div class="topLabel">Resultado principal</div>
@@ -106,28 +109,38 @@
           </div>
 
           <div class="listWrap">
-            <h3>Detalles</h3>
+            <h3>Probabilidades</h3>
             <div id="predList" class="predList muted">Aún no hay resultados.</div>
           </div>
 
-          <div class="actions right">
-            <button id="goResults" class="btn ghost" disabled>Ir a Resultados (después)</button>
+          <div class="listWrap">
+            <h3>Diagnóstico general</h3>
+            <div id="dxBox" class="dxBox muted">Aún no hay orientación. Analiza una radiografía.</div>
           </div>
+
+          <div class="actions right">
+            <button id="goResults" class="btn ghost" disabled>Ver en Resultados</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RESULTADOS -->
+    <section id="tab-resultados" class="view">
+      <div class="card">
+        <div class="row">
+          <h2>Resultados</h2>
+          <button id="btnClearHistory" class="btn ghost">Borrar resultado</button>
+        </div>
+        <p class="muted">Se muestra el último análisis guardado.</p>
+
+        <div id="resultsBox" class="dxBox muted">
+          Aún no hay resultados guardados. Realiza un análisis primero.
         </div>
       </div>
     </section>
 
-    <!-- RESULTADOS (placeholder) -->
-    <section id="tab-resultados" class="view">
-      <div class="card">
-        <h2>Resultados</h2>
-        <p class="muted">Esta sección la construimos al final (historial, exportar, etc.).</p>
-        <div class="empty">
-          <div class="emptyIcon">🗂</div>
-          <div class="emptyText">Sin historial por ahora.</div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="foot">
