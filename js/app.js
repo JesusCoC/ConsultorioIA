@@ -210,6 +210,7 @@ btnPredict.addEventListener("click", async () => {
   prediction.sort((a,b) => b.probability - a.probability);
 
   const top = prediction[0];
+  renderGuide(top.className);
   predTop.classList.remove("hidden");
   topName.textContent = top.className;
   topConf.textContent = `Confianza: ${(top.probability*100).toFixed(2)}%`;
